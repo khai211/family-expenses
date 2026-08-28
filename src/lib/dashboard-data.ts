@@ -11,8 +11,10 @@ export type DashboardData = {
   visibleTransactions: Transaction[]; // family + own-personal, this month
   totalFamilySpend: number;
   categoryTotals: { category: string; amount: number }[];
-  last6Months: { month: string; amount: number }[];
+  trendHistory: { month: string; amount: number }[]; // last 24 months, oldest first
 };
+
+const TREND_HISTORY_MONTHS = 24;
 
 export async function getMostRecentMonthWithData(
   supabase: SupabaseClient,
@@ -37,7 +39,7 @@ export async function getDashboardData(
   month: string,
 ): Promise<DashboardData> {
   const { start, end } = monthRange(month);
-  const sixMonthStart = monthRange(shiftMonth(month, -5)).start;
+  const trendHistoryStart = monthRange(shiftMonth(month, -(TREND_HISTORY_MONTHS - 1))).start;
 
   const [membersRes, visibleRes, trendRes] = await Promise.all([
     supabase
@@ -57,7 +59,7 @@ export async function getDashboardData(
       .select("date, amount, category")
       .eq("household_id", householdId)
       .eq("is_family", true)
-      .gte("date", sixMonthStart)
+      .gte("date", trendHistoryStart)
       .lt("date", end),
   ]);
 
@@ -78,8 +80,8 @@ export async function getDashboardData(
     amount,
   })).sort((a, b) => b.amount - a.amount);
 
-  const last6Months = Array.from({ length: 6 }, (_, i) => {
-    const m = shiftMonth(month, i - 5);
+  const trendHistory = Array.from({ length: TREND_HISTORY_MONTHS }, (_, i) => {
+    const m = shiftMonth(month, i - (TREND_HISTORY_MONTHS - 1));
     return {
       month: m,
       amount: sum(
@@ -95,7 +97,7 @@ export async function getDashboardData(
     visibleTransactions,
     totalFamilySpend,
     categoryTotals,
-    last6Months,
+    trendHistory,
   };
 }
 

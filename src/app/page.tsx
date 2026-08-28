@@ -122,10 +122,7 @@ export default async function Home({
         </div>
 
         <section className="rounded-xl border border-border bg-surface p-6">
-          <h2 className="mb-4 text-sm font-medium text-foreground">
-            6 Months Summary
-          </h2>
-          <TrendChart data={data.last6Months} />
+          <TrendChart data={data.trendHistory} />
         </section>
       </div>
     </main>
