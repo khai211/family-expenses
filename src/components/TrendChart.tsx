@@ -38,7 +38,7 @@ export function TrendChart({
         </button>
       </div>
       <ResponsiveContainer width="100%" height={220}>
-        <LineChart data={chartData} margin={{ top: 32, right: 32, left: 8, bottom: 0 }}>
+        <LineChart data={chartData} margin={{ top: 32, right: 32, left: 8, bottom: 8 }}>
           <defs>
             <linearGradient id="trendLineGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#3B82F6" />
@@ -49,7 +49,9 @@ export function TrendChart({
             dataKey="label"
             tickLine={false}
             axisLine={false}
+            padding={{ left: 24, right: 24 }}
             tick={{ fontSize: 12, fill: "var(--muted)" }}
+            tickMargin={12}
           />
           <YAxis hide domain={[0, (max: number) => max * 1.25]} />
           <Tooltip
