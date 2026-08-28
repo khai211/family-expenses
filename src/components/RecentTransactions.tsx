@@ -1,0 +1,243 @@
+"use client";
+
+import { useState } from "react";
+import { formatSGD } from "@/lib/currency";
+import { categoryColor } from "@/lib/categories";
+import {
+  deleteTransaction,
+  toggleFamily,
+  updateTransaction,
+} from "@/app/actions";
+import { IconOrb } from "@/components/IconOrb";
+import type { Transaction } from "@/lib/types";
+import type { Member } from "@/lib/dashboard-data";
+import type { CategoryRow } from "@/lib/category-data";
+
+type Sort = "recent" | "top";
+
+export function RecentTransactions({
+  transactions,
+  members,
+  currentUserId,
+  categories,
+  colorMap,
+  iconMap,
+}: {
+  transactions: Transaction[];
+  members: Member[];
+  currentUserId: string;
+  categories: CategoryRow[];
+  colorMap: Record<string, string>;
+  iconMap: Record<string, string>;
+}) {
+  const [sort, setSort] = useState<Sort>("recent");
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const memberName = (userId: string) => {
+    if (userId === currentUserId) return "You";
+    const m = members.find((m) => m.user_id === userId);
+    return m?.email?.split("@")[0] ?? "Partner";
+  };
+
+  const sorted =
+    sort === "top"
+      ? [...transactions].sort((a, b) => b.amount - a.amount)
+      : transactions;
+
+  return (
+    <div>
+      <div className="mb-3 flex gap-1">
+        {([
+          ["recent", "Recent"],
+          ["top", "Top spend"],
+        ] as [Sort, string][]).map(([s, label]) => (
+          <button
+            key={s}
+            onClick={() => setSort(s)}
+            className={`rounded-full px-3 py-1 text-xs ${
+              sort === s
+                ? "bg-foreground text-background"
+                : "text-muted hover:text-foreground"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
+        {sorted.length === 0 && (
+          <p className="py-6 text-center text-sm text-muted">
+            No transactions.
+          </p>
+        )}
+        {sorted.map((t) =>
+          editingId === t.id ? (
+            <EditRow
+              key={t.id}
+              txn={t}
+              onDone={() => setEditingId(null)}
+              categories={categories}
+            />
+          ) : (
+            <Row
+              key={t.id}
+              txn={t}
+              addedByLabel={memberName(t.added_by)}
+              onEdit={() => setEditingId(t.id)}
+              colorMap={colorMap}
+              iconMap={iconMap}
+            />
+          ),
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Row({
+  txn,
+  addedByLabel,
+  onEdit,
+  colorMap,
+  iconMap,
+}: {
+  txn: Transaction;
+  addedByLabel: string;
+  onEdit: () => void;
+  colorMap: Record<string, string>;
+  iconMap: Record<string, string>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const color = categoryColor(txn.category, colorMap);
+
+  return (
+    <div className="group flex items-center justify-between gap-3 rounded-lg px-2 py-2 hover:bg-black/[0.02]">
+      <IconOrb icon={iconMap[txn.category ?? "Uncategorized"]} color={color} />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="truncate text-sm text-foreground">
+            {txn.merchant_clean || txn.merchant_raw || txn.note || "Expense"}
+          </span>
+          {txn.category ? (
+            <span
+              className="rounded-full px-1.5 py-0.5 text-[10px] font-medium text-white"
+              style={{ background: color }}
+            >
+              {txn.category}
+            </span>
+          ) : (
+            <span className="rounded-full bg-[color:var(--color-uncategorized)] px-1.5 py-0.5 text-[10px] font-medium text-white">
+              needs a category
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 text-xs text-muted">
+          {txn.date} · added by {addedByLabel}
+          {txn.note && txn.merchant_clean ? ` · ${txn.note}` : ""}
+        </p>
+      </div>
+
+      <button
+        disabled={busy}
+        onClick={async () => {
+          setBusy(true);
+          await toggleFamily(txn.id, !txn.is_family);
+          setBusy(false);
+        }}
+        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+          txn.is_family
+            ? "bg-accent-gold/20 text-accent-gold"
+            : "bg-transparent text-muted ring-1 ring-border"
+        }`}
+        title="Tap to toggle family / personal"
+      >
+        {txn.is_family ? "Family" : "Personal"}
+      </button>
+
+      <span className="font-money w-24 shrink-0 text-right text-sm text-foreground">
+        {formatSGD(txn.amount)}
+      </span>
+
+      <div className="flex shrink-0 gap-1 opacity-0 group-hover:opacity-100">
+        <button onClick={onEdit} className="text-xs text-muted underline">
+          Edit
+        </button>
+        <button
+          onClick={() => deleteTransaction(txn.id)}
+          className="text-xs text-muted underline"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EditRow({
+  txn,
+  onDone,
+  categories,
+}: {
+  txn: Transaction;
+  onDone: () => void;
+  categories: CategoryRow[];
+}) {
+  const [date, setDate] = useState(txn.date);
+  const [amount, setAmount] = useState(String(txn.amount));
+  const [category, setCategory] = useState(txn.category ?? "");
+  const [note, setNote] = useState(txn.note ?? "");
+
+  async function save() {
+    await updateTransaction(txn.id, {
+      date,
+      amount: Number(amount),
+      category: category || null,
+      note: note || null,
+    });
+    onDone();
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-surface px-2 py-2 text-sm">
+      <input
+        type="date"
+        value={date}
+        onChange={(e) => setDate(e.target.value)}
+        className="rounded border border-border px-1.5 py-1 text-xs"
+      />
+      <input
+        type="number"
+        step="0.01"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value)}
+        className="font-money w-24 rounded border border-border px-1.5 py-1 text-xs"
+      />
+      <select
+        value={category}
+        onChange={(e) => setCategory(e.target.value)}
+        className="rounded border border-border px-1.5 py-1 text-xs"
+      >
+        <option value="">Uncategorized</option>
+        {categories.map((c) => (
+          <option key={c.name} value={c.name}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+      <input
+        type="text"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Note"
+        className="min-w-0 flex-1 rounded border border-border px-1.5 py-1 text-xs"
+      />
+      <button onClick={save} className="text-xs text-foreground underline">
+        Save
+      </button>
+      <button onClick={onDone} className="text-xs text-muted underline">
+        Cancel
+      </button>
+    </div>
+  );
+}

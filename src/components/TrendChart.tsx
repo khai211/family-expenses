@@ -1,0 +1,88 @@
+"use client";
+
+import { useState } from "react";
+import { LineChart, Line, XAxis, YAxis, Tooltip, LabelList, ResponsiveContainer } from "recharts";
+import { formatSGD } from "@/lib/currency";
+import { monthLabel } from "@/lib/month";
+
+export function TrendChart({
+  data,
+}: {
+  data: { month: string; amount: number }[];
+}) {
+  const [showAmounts, setShowAmounts] = useState(false);
+  const chartData = data.map((d) => ({
+    ...d,
+    label: monthLabel(d.month).split(" ")[0].slice(0, 3),
+  }));
+
+  return (
+    <div>
+      <div className="mb-2 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowAmounts((v) => !v)}
+          aria-label="Show amounts"
+          aria-pressed={showAmounts}
+          className="relative h-6 w-11 shrink-0 rounded-full transition-colors"
+          style={{ background: showAmounts ? "#22C55E" : "#CBD5E1" }}
+        >
+          <span
+            className={`absolute top-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold shadow transition-transform ${
+              showAmounts ? "translate-x-[22px]" : "translate-x-0.5"
+            }`}
+            style={{ color: showAmounts ? "#22C55E" : "#94A3B8" }}
+          >
+            $
+          </span>
+        </button>
+      </div>
+      <ResponsiveContainer width="100%" height={220}>
+        <LineChart data={chartData} margin={{ top: 32, right: 32, left: 8, bottom: 0 }}>
+          <defs>
+            <linearGradient id="trendLineGradient" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#3B82F6" />
+              <stop offset="100%" stopColor="#22C55E" />
+            </linearGradient>
+          </defs>
+          <XAxis
+            dataKey="label"
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontSize: 12, fill: "var(--muted)" }}
+          />
+          <YAxis hide domain={[0, (max: number) => max * 1.25]} />
+          <Tooltip
+            formatter={(value) => formatSGD(Number(value))}
+            cursor={{ stroke: "var(--border)" }}
+            contentStyle={{
+              background: "var(--surface)",
+              border: "1px solid var(--border)",
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+            }}
+          />
+          <Line
+            type="monotone"
+            dataKey="amount"
+            stroke="url(#trendLineGradient)"
+            strokeWidth={3}
+            dot={{ r: 5, fill: "var(--surface)", stroke: "#3B82F6", strokeWidth: 2 }}
+            activeDot={{ r: 7, fill: "#3B82F6", stroke: "var(--surface)", strokeWidth: 2 }}
+          >
+            {showAmounts && (
+              <LabelList
+                dataKey="amount"
+                position="top"
+                offset={14}
+                formatter={(value) => formatSGD(Number(value))}
+                style={{ fontSize: 11, fontWeight: 700, fill: "var(--foreground)" }}
+              />
+            )}
+          </Line>
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
