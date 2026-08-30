@@ -165,6 +165,59 @@ export async function addCategory(name: string) {
   revalidatePath("/import");
 }
 
+export async function updateCategory(oldName: string, newName: string) {
+  const supabase = await createClient();
+  const householdId = await getHouseholdId(supabase);
+  if (!householdId) throw new Error("No household");
+
+  const trimmed = newName.trim();
+  if (!trimmed || trimmed === oldName) return;
+
+  const { error } = await supabase
+    .from("categories")
+    .update({ name: trimmed })
+    .eq("household_id", householdId)
+    .eq("name", oldName);
+  if (error) throw new Error(error.message);
+
+  // Category names are stored as plain text elsewhere, not a foreign key —
+  // cascade the rename so existing data doesn't silently fall back to
+  // "Uncategorized".
+  await Promise.all([
+    supabase
+      .from("transactions")
+      .update({ category: trimmed })
+      .eq("household_id", householdId)
+      .eq("category", oldName),
+    supabase
+      .from("category_rules")
+      .update({ category: trimmed })
+      .eq("household_id", householdId)
+      .eq("category", oldName),
+  ]);
+
+  revalidatePath("/settings");
+  revalidatePath("/");
+  revalidatePath("/import");
+}
+
+export async function deleteCategory(name: string) {
+  const supabase = await createClient();
+  const householdId = await getHouseholdId(supabase);
+  if (!householdId) throw new Error("No household");
+
+  const { error } = await supabase
+    .from("categories")
+    .delete()
+    .eq("household_id", householdId)
+    .eq("name", name);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/settings");
+  revalidatePath("/");
+  revalidatePath("/import");
+}
+
 export async function addGoal(
   name: string,
   targetAmount: number,

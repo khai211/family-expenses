@@ -3,7 +3,13 @@
 import { useState } from "react";
 import type { CategoryRow } from "@/lib/category-data";
 import type { CategoryRule } from "@/lib/types";
-import { addCategory, upsertCategoryRule, deleteCategoryRule } from "@/app/actions";
+import {
+  addCategory,
+  updateCategory,
+  deleteCategory,
+  upsertCategoryRule,
+  deleteCategoryRule,
+} from "@/app/actions";
 import { IconOrb } from "@/components/IconOrb";
 
 export function CategorySettings({
@@ -39,10 +45,7 @@ function CategoryList({ categories }: { categories: CategoryRow[] }) {
       <h2 className="mb-3 text-sm font-medium text-foreground">Categories</h2>
       <ul className="space-y-2">
         {categories.map((c) => (
-          <li key={c.name} className="flex items-center gap-2 text-sm">
-            <IconOrb icon={c.icon} color={c.color} size={24} />
-            <span className="text-foreground">{c.name}</span>
-          </li>
+          <CategoryItem key={c.name} category={c} />
         ))}
       </ul>
       <form onSubmit={handleAdd} className="mt-4 flex gap-2">
@@ -62,6 +65,69 @@ function CategoryList({ categories }: { categories: CategoryRow[] }) {
         </button>
       </form>
     </section>
+  );
+}
+
+function CategoryItem({ category }: { category: CategoryRow }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(category.name);
+  const [saving, setSaving] = useState(false);
+
+  async function save() {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    setSaving(true);
+    await updateCategory(category.name, trimmed);
+    setSaving(false);
+    setEditing(false);
+  }
+
+  if (editing) {
+    return (
+      <li className="flex items-center gap-2 text-sm">
+        <IconOrb icon={category.icon} color={category.color} size={24} />
+        <input
+          autoFocus
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && save()}
+          className="flex-1 rounded border border-border bg-surface px-2 py-1 text-sm"
+        />
+        <button
+          onClick={save}
+          disabled={saving}
+          className="text-xs text-foreground underline disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button
+          onClick={() => {
+            setName(category.name);
+            setEditing(false);
+          }}
+          className="text-xs text-muted underline"
+        >
+          Cancel
+        </button>
+      </li>
+    );
+  }
+
+  return (
+    <li className="flex items-center gap-2 text-sm">
+      <IconOrb icon={category.icon} color={category.color} size={24} />
+      <span className="flex-1 text-foreground">{category.name}</span>
+      <button onClick={() => setEditing(true)} className="text-xs text-muted underline">
+        Edit
+      </button>
+      <button
+        onClick={() => deleteCategory(category.name)}
+        className="text-xs text-muted underline"
+      >
+        Delete
+      </button>
+    </li>
   );
 }
 
