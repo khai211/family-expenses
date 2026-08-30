@@ -9,6 +9,7 @@ import {
   updateTransaction,
 } from "@/app/actions";
 import { IconOrb } from "@/components/IconOrb";
+import { FamilyToggle } from "@/components/FamilyToggle";
 import type { Transaction } from "@/lib/types";
 import type { Member } from "@/lib/dashboard-data";
 import type { CategoryRow } from "@/lib/category-data";
@@ -138,22 +139,15 @@ function Row({
         </p>
       </div>
 
-      <button
+      <FamilyToggle
+        isFamily={txn.is_family}
         disabled={busy}
-        onClick={async () => {
+        onToggle={async () => {
           setBusy(true);
           await toggleFamily(txn.id, !txn.is_family);
           setBusy(false);
         }}
-        className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-          txn.is_family
-            ? "bg-accent-gold/20 text-accent-gold"
-            : "bg-transparent text-muted ring-1 ring-border"
-        }`}
-        title="Tap to toggle family / personal"
-      >
-        {txn.is_family ? "Family" : "Personal"}
-      </button>
+      />
 
       <span className="font-money w-24 shrink-0 text-right text-sm text-foreground">
         {formatSGD(txn.amount)}
@@ -187,6 +181,7 @@ function EditRow({
   const [amount, setAmount] = useState(String(txn.amount));
   const [category, setCategory] = useState(txn.category ?? "");
   const [note, setNote] = useState(txn.note ?? "");
+  const [isFamily, setIsFamily] = useState(txn.is_family);
 
   async function save() {
     await updateTransaction(txn.id, {
@@ -194,6 +189,7 @@ function EditRow({
       amount: Number(amount),
       category: category || null,
       note: note || null,
+      is_family: isFamily,
     });
     onDone();
   }
@@ -232,6 +228,14 @@ function EditRow({
         placeholder="Note"
         className="min-w-0 flex-1 rounded border border-border px-1.5 py-1 text-xs"
       />
+      <label className="flex items-center gap-1.5 text-xs text-foreground">
+        <input
+          type="checkbox"
+          checked={isFamily}
+          onChange={(e) => setIsFamily(e.target.checked)}
+        />
+        Family expense
+      </label>
       <button onClick={save} className="text-xs text-foreground underline">
         Save
       </button>
