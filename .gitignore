@@ -46,3 +46,6 @@ next-env.d.ts
 
 # supabase CLI
 /supabase/.temp/
+
+# claude code internal state
+.claude/*.lock
