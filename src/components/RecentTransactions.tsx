@@ -13,7 +13,7 @@ import type { Transaction } from "@/lib/types";
 import type { Member } from "@/lib/dashboard-data";
 import type { CategoryRow } from "@/lib/category-data";
 
-type Sort = "recent" | "top";
+type View = "recent" | "top" | "personal";
 
 export function RecentTransactions({
   transactions,
@@ -30,7 +30,7 @@ export function RecentTransactions({
   colorMap: Record<string, string>;
   iconMap: Record<string, string>;
 }) {
-  const [sort, setSort] = useState<Sort>("recent");
+  const [view, setView] = useState<View>("recent");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const memberName = (userId: string) => {
@@ -39,10 +39,9 @@ export function RecentTransactions({
     return m?.email?.split("@")[0] ?? "Partner";
   };
 
+  const filtered = view === "personal" ? transactions.filter((t) => !t.is_family) : transactions;
   const sorted =
-    sort === "top"
-      ? [...transactions].sort((a, b) => b.amount - a.amount)
-      : transactions;
+    view === "top" ? [...filtered].sort((a, b) => b.amount - a.amount) : filtered;
 
   return (
     <div>
@@ -50,12 +49,13 @@ export function RecentTransactions({
         {([
           ["recent", "Recent"],
           ["top", "Top spend"],
-        ] as [Sort, string][]).map(([s, label]) => (
+          ["personal", "Personal"],
+        ] as [View, string][]).map(([v, label]) => (
           <button
-            key={s}
-            onClick={() => setSort(s)}
+            key={v}
+            onClick={() => setView(v)}
             className={`rounded-full px-3 py-1 text-xs ${
-              sort === s
+              view === v
                 ? "bg-foreground text-background"
                 : "text-muted hover:text-foreground"
             }`}

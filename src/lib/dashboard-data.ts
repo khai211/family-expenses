@@ -11,6 +11,7 @@ export type DashboardData = {
   visibleTransactions: Transaction[]; // family + own-personal, this month
   totalFamilySpend: number;
   categoryTotals: { category: string; amount: number }[];
+  personalCategoryTotals: { category: string; amount: number }[]; // your own personal spend, this month
   trendHistory: { month: string; amount: number }[]; // last 24 months, oldest first
 };
 
@@ -80,6 +81,17 @@ export async function getDashboardData(
     amount,
   })).sort((a, b) => b.amount - a.amount);
 
+  const personalCategoryMap = new Map<string, number>();
+  for (const row of visibleTransactions) {
+    if (row.is_family || row.added_by !== userId) continue;
+    const cat = row.category ?? "Uncategorized";
+    personalCategoryMap.set(cat, (personalCategoryMap.get(cat) ?? 0) + Number(row.amount));
+  }
+  const personalCategoryTotals = Array.from(
+    personalCategoryMap,
+    ([category, amount]) => ({ category, amount }),
+  ).sort((a, b) => b.amount - a.amount);
+
   const trendHistory = Array.from({ length: TREND_HISTORY_MONTHS }, (_, i) => {
     const m = shiftMonth(month, i - (TREND_HISTORY_MONTHS - 1));
     return {
@@ -97,6 +109,7 @@ export async function getDashboardData(
     visibleTransactions,
     totalFamilySpend,
     categoryTotals,
+    personalCategoryTotals,
     trendHistory,
   };
 }

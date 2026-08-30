@@ -91,6 +91,19 @@ export default async function Home({
           />
         </section>
 
+        {data.personalCategoryTotals.length > 0 && (
+          <section className="rounded-xl border border-border bg-surface p-6">
+            <h2 className="mb-4 text-sm font-medium text-foreground">
+              My Personal Spending
+            </h2>
+            <CategoryDonut
+              categoryTotals={data.personalCategoryTotals}
+              colorMap={colorMap}
+              iconMap={iconMap}
+            />
+          </section>
+        )}
+
         <section className="rounded-xl border border-border bg-surface p-6">
           <h2 className="mb-4 text-sm font-medium text-foreground">
             Transaction History
