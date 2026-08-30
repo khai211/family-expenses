@@ -23,6 +23,7 @@ export async function parseReceiptImage(
   const response = await client.messages.create({
     model: STATEMENT_PARSE_MODEL,
     max_tokens: 1024,
+    thinking: { type: "disabled" },
     messages: [
       {
         role: "user",

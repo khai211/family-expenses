@@ -24,6 +24,7 @@ export async function parseStatementPdf(
   const response = await client.messages.create({
     model: STATEMENT_PARSE_MODEL,
     max_tokens: 8000,
+    thinking: { type: "disabled" },
     messages: [
       {
         role: "user",

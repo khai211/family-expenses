@@ -6,6 +6,7 @@ import { formatSGD } from "@/lib/currency";
 import { categoryColor } from "@/lib/categories";
 import { parseStatement, confirmImport, type ReviewRow } from "@/app/import/actions";
 import { buildColorMap, type CategoryRow } from "@/lib/category-data";
+import { FamilyToggle } from "@/components/FamilyToggle";
 
 type Row = ReviewRow & { include: boolean };
 
@@ -87,54 +88,51 @@ export function ImportFlow({ categories }: { categories: CategoryRow[] }) {
         {rows.map((row, i) => (
           <div
             key={i}
-            className={`flex flex-wrap items-center gap-2 rounded-lg px-2 py-2 text-sm ${
+            className={`rounded-lg px-2 py-2 text-sm ${
               row.is_duplicate ? "opacity-50" : ""
             }`}
           >
-            <input
-              type="checkbox"
-              checked={row.include}
-              onChange={(e) => updateRow(i, { include: e.target.checked })}
-            />
-            <span className="w-24 shrink-0 text-muted">{row.date}</span>
-            <span className="min-w-0 flex-1 truncate text-foreground">
-              {row.merchant_clean || row.merchant_raw}
-            </span>
-            <select
-              value={row.category ?? ""}
-              onChange={(e) => updateRow(i, { category: e.target.value || null })}
-              className="rounded border border-border px-1.5 py-1 text-xs"
-              style={
-                row.category
-                  ? { color: categoryColor(row.category, colorMap) }
-                  : undefined
-              }
-            >
-              <option value="">Uncategorized</option>
-              {categories.map((c) => (
-                <option key={c.name} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={() => updateRow(i, { is_family: !row.is_family })}
-              className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-                row.is_family
-                  ? "bg-accent-gold/20 text-accent-gold"
-                  : "bg-transparent text-muted ring-1 ring-border"
-              }`}
-            >
-              {row.is_family ? "Family" : "Personal"}
-            </button>
-            <span className="font-money w-20 shrink-0 text-right text-foreground">
-              {formatSGD(row.amount)}
-            </span>
-            {row.is_duplicate && (
-              <span className="w-full text-[11px] text-muted">
-                Already imported
+            <div className="flex items-start gap-2">
+              <input
+                type="checkbox"
+                checked={row.include}
+                onChange={(e) => updateRow(i, { include: e.target.checked })}
+                className="mt-1 shrink-0"
+              />
+              <span className="w-24 shrink-0 pt-0.5 text-muted">{row.date}</span>
+              <span className="min-w-0 flex-1 break-words text-foreground">
+                {row.merchant_clean || row.merchant_raw}
               </span>
-            )}
+              <span className="font-money w-20 shrink-0 pt-0.5 text-right text-foreground">
+                {formatSGD(row.amount)}
+              </span>
+            </div>
+            <div className="mt-1.5 flex items-center gap-2 pl-6">
+              <select
+                value={row.category ?? ""}
+                onChange={(e) => updateRow(i, { category: e.target.value || null })}
+                className="rounded border border-border px-1.5 py-1 text-xs"
+                style={
+                  row.category
+                    ? { color: categoryColor(row.category, colorMap) }
+                    : undefined
+                }
+              >
+                <option value="">Uncategorized</option>
+                {categories.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <FamilyToggle
+                isFamily={row.is_family}
+                onToggle={() => updateRow(i, { is_family: !row.is_family })}
+              />
+              {row.is_duplicate && (
+                <span className="text-[11px] text-muted">Already imported</span>
+              )}
+            </div>
           </div>
         ))}
       </div>
