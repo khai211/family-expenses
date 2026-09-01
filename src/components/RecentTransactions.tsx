@@ -14,7 +14,7 @@ import type { Transaction } from "@/lib/types";
 import type { Member } from "@/lib/dashboard-data";
 import type { CategoryRow } from "@/lib/category-data";
 
-type View = "recent" | "top" | "personal";
+type View = "recent" | "top" | "family" | "personal";
 
 export function RecentTransactions({
   transactions,
@@ -40,7 +40,12 @@ export function RecentTransactions({
     return m?.email?.split("@")[0] ?? "Partner";
   };
 
-  const filtered = view === "personal" ? transactions.filter((t) => !t.is_family) : transactions;
+  const filtered =
+    view === "personal"
+      ? transactions.filter((t) => !t.is_family)
+      : view === "family"
+        ? transactions.filter((t) => t.is_family)
+        : transactions;
   const sorted =
     view === "top" ? [...filtered].sort((a, b) => b.amount - a.amount) : filtered;
 
@@ -50,6 +55,7 @@ export function RecentTransactions({
         {([
           ["recent", "Recent"],
           ["top", "Top spend"],
+          ["family", "Family"],
           ["personal", "Personal"],
         ] as [View, string][]).map(([v, label]) => (
           <button
